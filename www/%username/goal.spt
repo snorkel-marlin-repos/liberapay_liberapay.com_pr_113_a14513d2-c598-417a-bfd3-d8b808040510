@@ -1,0 +1,32 @@
+from aspen import Response
+
+from liberapay.utils import get_participant
+
+[---]
+
+request.allow("POST")
+participant = get_participant(state, restrict=True)
+
+goal = request.body["goal"]
+
+if goal == "null":
+    goal = None
+elif goal == "custom":
+    goal = request.body["goal_custom"]
+
+if goal is not None:
+    goal = parse_decimal(goal)
+
+if goal == -1 and not request.body.get("confirmed"):
+    msg = _("Warning: Doing this will remove all the tips you are currently receiving."
+            "\n\nThat cannot be undone!")
+else:
+    participant.update_goal(goal)
+    response.redirect('./edit')
+
+[---] text/html
+% extends "templates/base.html"
+% block content
+    % from "templates/confirm.html" import confirm with context
+    {{ confirm(msg, request.body, './edit') }}
+% endblock

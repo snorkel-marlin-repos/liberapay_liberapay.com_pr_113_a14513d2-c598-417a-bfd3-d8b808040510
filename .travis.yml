@@ -1,0 +1,28 @@
+language: python
+addons:
+  postgresql: 9.4
+branches:
+  only:
+    - master
+cache:
+  directories:
+    - env/bin
+    - env/lib/python2.7/site-packages
+install:
+ - if [ "${TRAVIS_BRANCH}" = "master" -a "${TRAVIS_PULL_REQUEST}" = "false" ]; then rm -rf env; fi
+ - touch requirements.txt && make env
+before_script:
+ - psql -U postgres -c 'CREATE DATABASE liberapay_tests;'
+ - if [ "${TRAVIS_BRANCH}" = "master" -a "${TRAVIS_PULL_REQUEST}" = "false" ]; then rm -rfv tests/py/fixtures; fi
+script: make test
+notifications:
+  email: false
+  irc:
+    channels:
+      - "chat.freenode.net#liberapay"
+    on_success: change
+    on_failure: always
+    template:
+      - "%{repository} (%{branch}:%{commit} by %{author}): %{message} (%{build_url})"
+    skip_join: true
+sudo: false

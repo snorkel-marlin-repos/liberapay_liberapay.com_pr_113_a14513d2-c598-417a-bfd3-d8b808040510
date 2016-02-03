@@ -1,0 +1,461 @@
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    overflow-y: scroll;
+}
+
+#wrapper {
+    min-height: 100%;
+    min-width: 100%;
+    padding-bottom: 100px;
+    position: relative;
+
+    & > footer {
+        bottom: 0px;
+        position: absolute;
+        text-align: center;
+        width: 100%;
+
+        & > a {
+            display: inline-block;
+            padding: 10px;
+        }
+    }
+}
+
+.navbar-dropdown {
+    background: transparent;
+    border: none;
+    color: #777;
+    margin: 8px 0;
+    padding: 7px 13px;
+
+    &:hover {
+        color: #333;
+    }
+}
+
+.avatar img {
+    max-height: 120px;
+    max-width: 100%;
+}
+
+#members .avatar {
+    max-height: 32px;
+    max-width: 32px;
+}
+
+.user-box {
+    width: 500px;
+}
+
+input.amount {
+    min-width: 5em;
+    max-width: 8em;
+    &.input-sm {
+        width: 5em;
+    }
+}
+
+.input-group-addon, .input-group-btn {
+    width: auto !important;
+}
+
+.input-group-addon:not(:first-child) {
+    border-left: none;
+}
+
+.radio > .with-input-group-sm {
+    & > input[type=radio] {
+        top: 5px;
+    }
+    & > div {
+        display: inline-block;
+        vertical-align: middle;
+    }
+}
+
+.langs select {
+    margin: 5px 0;
+}
+
+textarea.vertical-resize {
+    resize: vertical;
+}
+
+div.account {
+    display: inline-block;
+    position: relative;
+    text-align: center;
+    vertical-align: top;
+    width: 135px;
+    word-wrap: break-word;
+}
+
+div.account-action {
+    position: absolute;
+    right: 0;
+    top: 1px;
+}
+
+button.close {
+    padding: 0 5px;
+}
+
+img.account-type {
+    max-height: 32px;
+    max-width: 32px;
+}
+
+.profile-box {
+    .avatar {
+        text-align: center;
+    }
+    h1 {
+        font-size: 20px;
+        margin: 0 0 10px;
+    }
+    .radio {
+        margin-top: 0;
+    }
+}
+
+.profile-goal-bar {
+    max-width: 450px;
+}
+
+.btn.pull-right {
+    margin-bottom: 1em;
+}
+
+ul.memberships {
+    margin: 0;
+    padding: 0;
+    & > li {
+        display: inline-block;
+        margin: 0 5px 1em 0;
+        position: relative;
+        vertical-align: top;
+        width: 130px;
+        word-wrap: break-word;
+    }
+    .nmembers {
+        font-size: 85%;
+    }
+}
+
+.search-result {
+    .avatar {
+        float: left;
+        max-height: 66px;
+        max-width: 66px;
+    }
+    .col-right {
+        margin-left: 74px;
+    }
+    .excerpt {
+        font-size: 100%;
+    }
+}
+
+ul.people {
+    margin: 0;
+    padding: 0;
+}
+
+li.mini-user {
+    display: inline-block;
+    margin-bottom: 5px;
+    padding: 5px;
+    text-align: center;
+    vertical-align: top;
+    width: 110px;
+    img.avatar {
+        max-width: 100%;
+    }
+    .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+#subnav + p, #subnav + div.paragraph {
+    margin-top: 1.5em;
+}
+
+ul.emails {
+    margin: 1em 0;
+    max-width: 600px;
+    padding: 0;
+    li {
+        border-bottom: 1px dashed #ccc;
+        line-height: 30px;
+        list-style: none;
+        margin: 0.33em 0.5em;
+        padding: 0 0 0.33em;
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+    span.address {
+        display: inline-block;
+        max-width: 250px;
+        vertical-align: top;
+        word-wrap: break-word;
+    }
+    button {
+        float: right;
+        margin-left: 1em;
+    }
+}
+
+.faq dt {
+    margin: 1.5em 0 0.33em;
+}
+
+section.profile-statement {
+    h1, h2, h3, h4 {
+        color: #956410;
+    }
+    h1 {
+        font-size: 26px;
+        margin: 26px 0 10px;
+    }
+    h2 {
+        font-size: 20px;
+        margin: 20px 0 10px;
+    }
+    h3 {
+        font-size: 16px;
+        margin: 16px 0 10px;
+    }
+    h4, h5, h6 {
+        font-size: 14px;
+        margin: 14px 0 10px;
+    }
+}
+
+#notification-area {
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    text-align: center;
+    z-index: 10;
+
+    .notification {
+        padding: 10px;
+    }
+
+    .notification-error {
+        background-color: #f2dede;
+        border-top: 1px solid #ebccd1;
+        color: #a94442;
+    }
+
+    .notification-success {
+        color: #3c763d;
+        background-color: #dff0d8;
+        border-color: #d6e9c6;
+    }
+}
+
+.dropdown-hover {
+    .dropdown-menu {
+        margin-top: 0;
+    }
+    &:hover .dropdown-menu {
+        display: block;
+    }
+}
+
+#history {
+    td.totals {
+        padding-left: 0px;
+    }
+    .fees, .outside {
+        border-right: 1px solid #ddd;
+    }
+    .outside {
+        text-align: right;
+    }
+}
+
+.valign-middle tbody > tr > td {
+    vertical-align: middle;
+}
+
+.navbar-nav {
+    margin: 0;
+    & > li {
+        float: left;
+        & > a {
+            padding-bottom: 15px;
+            padding-top: 15px;
+        }
+    }
+}
+
+#credit-card input {
+    margin-bottom: 5px;
+}
+#card_number {
+    width: 15em;
+}
+#expiration_date {
+    width: 6em;
+}
+#cvv {
+    margin-left: 0.8em;
+    width: 5em;
+}
+
+label:not([for]) {
+    font-weight: normal;
+    vertical-align: top;
+    span:first-child {
+        font-weight: 700;
+    }
+}
+
+.block-labels label {
+    display: block;
+    margin-bottom: 15px;
+}
+
+input.invalid {
+    box-shadow: rgb(255, 0, 0) 0 0 1.5px 1px;
+}
+input.invalid:focus {
+    box-shadow: rgba(255, 0, 0, 0.4) 0 0 2px 2px;
+}
+.invalid-msg {
+    $background: #eee;
+    $border: #aaa;
+    background: $background;
+    border: 1px solid $border;
+    border-radius: 5px;
+    display: none;
+    margin: 7px 0 0 -12px;
+    padding: 12px;
+    position: absolute;
+
+    &::after, &::before {
+        background: transparent;
+        border-style: solid outset solid solid;
+        border-color: transparent;
+        content: '';
+        height: 0;
+        left: 4px;
+        position: absolute;
+        top: -16px;
+        width: 0;
+    }
+    &::after {
+        border-width: 7px;
+        border-bottom-color: $background;
+        margin-left: 1px;
+        margin-top: 2px;
+    }
+    &::before {
+        border-width: 8px;
+        border-bottom-color: $border;
+    }
+}
+input.invalid:focus + .invalid-msg {
+    display: block;
+}
+
+.text-warning {
+    font-weight: bold;
+}
+
+#team {
+    width: auto;
+    margin-bottom: 3em;
+    th {
+        text-align: center;
+    }
+    th, td {
+        &:not(:first-child) {
+            border-left: 1px dashed #ddd;
+        }
+        &:nth-child(2), &:nth-child(3) {
+            border-left: 2px solid #ddd;
+        }
+    }
+    td:first-child {
+        min-width: 12em;
+    }
+    td:not(:first-child) {
+        text-align: right;
+        width: 8em;
+    }
+    input {
+        text-align: inherit;
+    }
+}
+
+.lookup-results {
+    background: #fff;
+    border: 1px solid #66AFE9;
+    border-top: none;
+    color: #888;
+    margin: -4px 0 0;
+    padding: 2px 0;
+    position: absolute;
+    z-index: 5;
+    & > li {
+        display: block;
+        margin: 0;
+        padding: 2px 12px;
+        &:hover {
+            background: #eee;
+        }
+    }
+    &:empty {
+        display: none;
+    }
+}
+
+.table td > form > input.form-control {
+    height: 30px;
+    margin: -7px 0;
+    padding: 4px 8px;
+}
+
+.table-condensed td > form > input.form-control {
+    height: 28px;
+    margin: -4px 0;
+    padding: 2px 5px;
+}
+
+.dropdown-menu > .level2 > a {
+    padding-left: 30px;
+}
+
+section.community-sidebar {
+    h1, h2, h3, h4 {
+        color: #888;
+    }
+    h1 {
+        font-size: 26px;
+        margin: 26px 0 10px;
+    }
+    h2 {
+        font-size: 20px;
+        margin: 20px 0 10px;
+    }
+    h3 {
+        font-size: 16px;
+        margin: 16px 0 10px;
+    }
+    h4, h5, h6 {
+        font-size: 14px;
+        margin: 14px 0 10px;
+    }
+}

@@ -1,0 +1,10 @@
+from liberapay.exceptions import AuthRequired
+
+[---]
+
+if user.ANON:
+    raise AuthRequired
+
+response.redirect(request.qs.get('back_to', '/'))
+
+[---] text/html

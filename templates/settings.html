@@ -1,0 +1,19 @@
+% extends "templates/base.html"
+
+% block subnav
+    {% set pages = [
+        ('/giving/', _('Giving')),
+        ('/receiving/', _('Receiving')),
+        ('/wallet/', _('Wallet')),
+        ('/settings/', _('Settings')),
+        ('/identity', _('Identity')),
+        ('/emails/', _('Emails')),
+        ('/widgets/', _('Widgets')),
+    ] + ([
+        ('/events', 'Events')
+    ] if user.is_admin else []) %}
+    % from "templates/nav.html" import nav with context
+    <ul class="nav nav-tabs">
+        {{ nav(pages, base='/'+participant.username) }}
+    </ul>
+% endblock

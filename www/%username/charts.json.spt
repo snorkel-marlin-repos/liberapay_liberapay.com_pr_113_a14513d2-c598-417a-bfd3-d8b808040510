@@ -1,0 +1,81 @@
+"""Return an array of objects with interesting data for the user.
+
+We want one object per payday, but the user probably didn't participate in
+every payday. Our solution is to fetch all paydays and all of the user's
+transfers, and then loop through transfers and aggregate into the relevant
+payday object.
+
+If the user has never received, we return an empty array. Client code can take
+this to mean, "no chart."
+
+We specifically don't worry about double-counting npatrons for out-of-band
+transfers. That's a rare case right now, pretty much only when someone
+deactivates their account and distributes their balance as a final gift. It
+could become much more common in a one-off payments world, depending on how the
+implementation.
+
+"""
+
+from aspen import Response
+
+from liberapay.utils import get_participant
+
+[---]
+
+participant = get_participant(state, restrict=False)
+
+if participant.hide_receiving:
+    if user != participant and not user.is_admin:
+        raise Response(403)
+
+
+# Fetch data from the database
+
+paydays = website.db.all("""
+
+      SELECT p.ts_start
+           , p.ts_start::date   AS date
+           , 0                  AS npatrons
+           , 0.00               AS receipts
+        FROM paydays p
+    ORDER BY ts_start DESC
+
+""", back_as=dict)
+
+transfers = website.db.all("""\
+
+   SELECT timestamp
+        , amount
+        , tipper
+     FROM transfers
+    WHERE tippee=%s
+      AND status = 'succeeded'
+ ORDER BY id DESC
+
+""", (participant.id,), back_as=dict)
+
+
+if not transfers:
+    # This user has never received money
+    paydays = []
+
+
+if paydays:
+
+    paydays_i = iter(paydays)
+    curpayday = next(paydays_i)
+    ts_start = curpayday.pop('ts_start')
+
+    # Loop through transfers, advancing payday cursor as appropriate
+    for transfer in transfers:
+        while transfer['timestamp'] < ts_start:
+            curpayday = next(paydays_i)
+            ts_start = curpayday.pop('ts_start')
+
+        curpayday['npatrons'] += 1
+        curpayday['receipts'] += transfer['amount']
+
+response.headers["Access-Control-Allow-Origin"] = "*"
+
+[---] application/json via jsonp_dump
+paydays

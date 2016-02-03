@@ -1,0 +1,34 @@
+from aspen import Response
+
+from liberapay.utils import get_participant
+
+[---]
+
+request.allow('GET', 'POST')
+participant = get_participant(state, restrict=True)
+
+out = {}
+
+if request.method == 'POST':
+
+    do = request.body['do']
+    try:
+        action, c_id = do.split(':', 1)
+        c_id = int(c_id)
+    except ValueError:
+        raise Response(400)
+
+    if action not in ('join', 'leave'):
+        raise Response(400)
+
+    is_on = action == 'join'
+    user.update_community_status('memberships', is_on, c_id)
+
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        response.redirect(request.body.get('back_to') or participant.path('edit'))
+
+else:
+    out = participant.get_communities()
+
+[---] application/json
+out

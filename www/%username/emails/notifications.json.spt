@@ -1,0 +1,31 @@
+from liberapay.notifications import EVENTS
+from liberapay.utils import get_participant
+
+[---]
+request.allow("POST")
+participant = get_participant(state, restrict=True)
+p_id = participant.id
+body = request.body
+
+fields = body['fields'].split()
+for field in fields:
+    event = EVENTS.get(field)
+    if not event:
+        continue
+    if body.get(field) == 'on':
+        mask = event.bit
+        op = '|'
+    else:
+        mask = 2147483647 ^ event.bit
+        op = '&'
+    website.db.run("""
+        UPDATE participants
+           SET email_notif_bits = email_notif_bits {0} %s
+         WHERE id = %s
+    """.format(op), (mask, p_id))
+
+if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+    response.redirect('.')
+
+[---] application/json via json_dump
+{'msg': _("Your notification settings have been changed.")}

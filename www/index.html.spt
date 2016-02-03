@@ -1,0 +1,138 @@
+from liberapay.utils.query_cache import QueryCache
+
+query_cache = QueryCache(website.db, threshold=5)
+
+[---]
+
+top_communities = query_cache.all("""
+    SELECT *, replace(name, '_', ' ') AS pretty_name
+      FROM communities
+  ORDER BY nmembers DESC, name
+     LIMIT 9
+""")
+
+[---]
+% extends "templates/base.html"
+
+% block head
+    <link type="application/opensearchdescription+xml" rel="search" href="/opensearch.osdd" />
+    <meta name="description" content="Recurrent donations platform" />
+    <meta name="og:type" content="website" />
+    <meta name="og:url" content="https://liberapay.com/" />
+    <meta name="og:title" content="Liberapay" />
+    <meta name="og:image" content="{{ website.asset('liberapay/icon.200.png') }}" />
+% endblock
+
+% block content
+
+% if user.ANON
+    <div class="jumbotron" style="text-align: center">
+        <p>{{ _("Liberapay is a recurrent donations platform.") }} <a href="/about/">{{ _("Learn more") }}</a></p>
+        <p><a class="btn btn-primary btn-lg" href="/sign-in">{{ _("Join us") }}</a></p>
+    </div>
+% endif
+
+<div class="row">
+
+    <div class="col-xs-12">
+    <div class="alert alert-warning">
+        <p>{{ _(
+            "Liberapay only opened {0} ago, so it still looks a bit empty, but "
+            "it won't stay that way for long if you join it and help us "
+            "{1}spread the word{2}!",
+            to_age(constants.LAUNCH_TIME),
+            '<a href="https://github.com/liberapay/salon/issues/3">'|safe,
+            '</a>'|safe
+        ) }}</p>
+        <p>{{ _(
+            "Please consider donating to {0}the Liberapay team{1}, even only "
+            "a symbolic amount, to help kickstart the platform.",
+            '<a href="/Liberapay/">'|safe,
+            '</a>'|safe
+        ) }}</p>
+    </div>
+    </div>
+
+    <div class="col-md-6">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h2 class="panel-title">{{ _("Donate") }}</h2>
+        </div>
+
+        <div class="panel-body">
+            % if not user.ANON
+            <p><a href="/{{ user.username }}/giving/">{{
+                _("You give {0} per week.", Money(user.giving, 'EUR'))
+            }}</a></p>
+            % endif
+
+            <p>{{ _("Who inspires you? See if they're on Liberapay:") }}</p>
+            % include "templates/search-box.html"
+
+            <p>{{ _("Explore our communities:") }}</p>
+            <ul class="communities memberships">
+                % for community in top_communities
+                <li>
+                    <a href="/for/{{ community.name }}/">{{ community.pretty_name }}</a>
+                    % set n = community.nmembers
+                    <div class="nmembers">
+                        {{ ngettext("{n} member", "{n} members", n) }}
+                    </div>
+                </li>
+                % endfor
+            </ul>
+            <a class="btn btn-default" href="/explore/">{{ _("More") }}</a><br><br>
+
+            <p>{{ _("Find your friends from social networks:") }}</p>
+            % for p in website.friends_platforms
+                <a class="btn btn-default" href="/on/{{ p.name }}/">{{ p.display_name }}</a>
+            % endfor
+        </div>
+    </div>
+    </div>
+
+    <div class="col-md-6">
+    <div class="panel panel-success">
+        <div class="panel-heading">
+            <h2 class="panel-title">{{ _("Receive") }}</h2>
+        </div>
+
+        <div class="panel-body">
+        % if user.ANON
+
+            <p>{{ _("Are you a creator of commons? Do you make free art, spread free knowledge, write free software?") }}</p>
+            <p>{{ _("Yes? Then Liberapay is for you! Create your account, fill your profile, and ask your audience to financially support your work.") }}</p>
+            <a class="btn btn-success" href="/sign-in">{{ _("Join us") }}</a>
+
+        % else
+
+            <p><a href="/{{ user.username }}/receiving/">{{
+                _("You receive {0} per week.", Money(user.receiving, 'EUR'))
+            }}</a></p>
+
+            % if not user.accepts_tips
+                <p>{{ _("You are currently refusing donations, you can change that {0}on your profile{1}.",
+                        "<a href='/%s/edit'>"|safe % user.username, "</a>"|safe) }}</p>
+            % elif user.goal and user.receiving >= user.goal
+                <p>{{ _("Congratulations, you have reached your goal of receiving {0} per week!", user.goal) }}</p>
+            % elif not user.mangopay_user_id
+                <p>{{ _("We need to know who you are before we can legally start to collect money for you.") }}</p>
+                <p><a class="btn btn-primary" href="/{{ user.username }}/identity">{{ _("Fill identity form") }}</a></p>
+            % else
+                <p>{{ _("To receive money, do something awesome and then tell people about it:") }}</p>
+                <ol>
+                    <li>{{ _("{0}Fill out your profile{1}.",
+                             "<a href='/%s/edit'>"|safe % user.username, "</a>"|safe) }}</li>
+                    <li>{{ _("{0}Embed our widgets{1} on your blog/website.",
+                             "<a href='/%s/widgets/'>"|safe % user.username, "</a>"|safe) }}</li>
+                    <li>{{ _("Contact the people who benefit from your work and ask them to support you.") }}</li>
+                </ol>
+            % endif
+
+        % endif
+        </div>
+    </div>
+    </div>
+
+</div>
+% endblock

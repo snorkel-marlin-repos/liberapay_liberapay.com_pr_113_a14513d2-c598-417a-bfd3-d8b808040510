@@ -1,0 +1,47 @@
+from aspen import Response
+
+from liberapay.constants import PRIVACY_FIELDS
+from liberapay.models.participant import Participant
+from liberapay.utils import get_participant
+
+[---]
+
+request.allow('POST')
+
+body = request.body
+out = {}
+
+if 'new-password' in body:
+    p = Participant.authenticate('username', 'password',
+                                 request.path['username'],
+                                 body['cur-password'])
+    if not p:
+        raise Response(403, _("Incorrect password"))
+    p.update_password(body['new-password'])
+    out['msg'] = _("Your password has been changed.")
+
+elif 'privacy' in body:
+    participant = get_participant(state, restrict=True)
+    p_id = participant.id
+    fields = body['privacy'].split()
+    for field in fields:
+        if field not in PRIVACY_FIELDS:
+            continue
+        value = body.get(field) == 'on'
+        website.db.run("""
+            UPDATE participants
+               SET {0} = %s
+             WHERE id = %s
+        """.format(field), (value, p_id))
+    out['msg'] = _("Your privacy settings have been changed.")
+
+elif 'username' in body:
+    p = get_participant(state, restrict=True)
+    p.change_username(body['username'])
+    response.redirect('/'+p.username+'/settings/')
+
+if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+    response.redirect('.')
+
+[---] application/json
+out

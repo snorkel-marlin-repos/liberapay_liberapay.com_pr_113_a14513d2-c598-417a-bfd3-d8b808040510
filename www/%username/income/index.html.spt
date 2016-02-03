@@ -1,0 +1,53 @@
+# encoding: utf8
+from __future__ import division, print_function, unicode_literals
+
+from aspen import Response
+
+from liberapay.utils import get_participant
+
+[-----------------------------------------------------------------------------]
+
+participant = get_participant(state, restrict=False)
+if not participant.accepts_tips or participant.hide_receiving:
+    raise Response(403)
+
+title = participant.username
+subhead = _("Income")
+
+[-----------------------------------------------------------------------------]
+% extends "templates/profile.html"
+% from "templates/team-members.html" import team_takes_table with context
+% block content
+
+% set receiving = Money(participant.receiving, "EUR")
+<p>{{ _("{0} receives {1} per week", participant.username, receiving) }}</p>
+
+% if participant.kind == 'group'
+    {{ team_takes_table(participant) }}
+% endif
+
+<div class="row">
+    <div class="chart-wrapper col-md-6">
+        <a name="gifts"></a>
+        <h3>{{ _("Euros Received Per Week") }}</h3>
+        <div class="chart" data-chart="receipts"></div>
+        <div class="x-axis">{{ _("weeks") }}</div>
+    </div>
+    <div class="chart-wrapper col-md-6">
+        <a name="gifts"></a>
+        <h3>{{ _("Number of Patrons Per Week") }}</h3>
+        <div class="chart" data-chart="npatrons"></div>
+        <div class="x-axis">{{ _("weeks") }}</div>
+    </div>
+</div>
+
+% endblock
+
+% block scripts
+<script>
+$(document).ready(function() {
+    jQuery.get('../charts.json', Liberapay.charts.make);
+});
+</script>
+{{ super() }}
+% endblock

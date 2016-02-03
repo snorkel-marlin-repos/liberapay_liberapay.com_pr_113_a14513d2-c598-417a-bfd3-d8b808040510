@@ -1,0 +1,111 @@
+from base64 import b64decode
+
+from aspen import Response
+from oauthlib.oauth2 import TokenExpiredError
+
+from liberapay.models.account_elsewhere import AccountElsewhere
+
+platforms_nav = [('/%s/' % p.name, p.display_name) for p in website.friends_platforms]
+del p
+
+[---]
+platform = getattr(website.platforms, request.path['platform'], None)
+if platform is None or platform not in website.friends_platforms:
+    raise Response(404)
+
+title = _("Friend Finder")
+
+account = None
+if not user.ANON:
+    account = user.get_account_elsewhere(platform.name)
+
+sess = None
+if account:
+    sess = account.get_auth_session()
+    if sess:
+        page_url = b64decode(request.qs.get('page', ''))
+        try:
+            friends, nfriends, pages_urls = platform.get_friends_for(account, page_url, sess)
+        except TokenExpiredError:
+            need_reconnect = True
+        else:
+            friends = AccountElsewhere.get_many(platform.name, friends)
+
+limited = getattr(platform, 'api_friends_limited', False)
+
+[---] text/html
+% extends "templates/base.html"
+
+% from 'templates/auth.html' import auth_button with context
+% from "templates/your-tip.html" import tip_form with context
+
+% block subnav
+    % from "templates/nav.html" import nav with context
+    <nav class="nav nav-tabs">
+        {{ nav(platforms_nav, base='/on') }}
+    </nav>
+% endblock
+
+% macro limitation_note()
+    % if limited
+        <br>
+        <p>{{ _("Note: privacy settings may prevent Liberapay from seeing some of your {0} friends.",
+                platform.display_name) }}</p>
+    % endif
+% endmacro
+
+% block content
+
+% if user.ANON
+<p>{% include "templates/sign-in-link.html" %}</p>
+% elif need_reconnect
+<div class="paragraph">
+    <span style="display: inline-block">
+    % call auth_button(platform.name, 'connect')
+        {{ _("Please refresh your {0} connection", platform.display_name) }}
+    % endcall
+    </span>
+    {{ _("to find your friends from there.") }}
+</div>
+% elif not account or not sess
+<div class="paragraph">
+    <span style="display: inline-block">
+    % call auth_button(platform.name, 'connect')
+        {{ _("Connect your {0} account", platform.display_name) }}
+    % endcall
+    </span>
+    {{ _("to find your friends from there.") }}
+</div>
+% elif not friends
+<p>{{ _("No friends found.") }}</p>
+{{ limitation_note() }}
+% else
+<p>{{ ngettext("You have {n} friend on {0}.", "You have {n} friends on {0}.",
+               nfriends, platform.display_name) }}</p>
+<table class="table table-condensed valign-middle">
+    <tr>
+        <th>{{ _('Name') }}</th>
+        <th>{{ _('On Liberapay?') }}</th>
+        <th>{{ _('Receives') }}</th>
+        <th>{{ _('Support') }}</th>
+    </tr>
+    % for friend in friends
+    % set p = friend.participant
+    % set tippee = p if p.join_time else friend
+    <tr class="{{ 'info' if p.join_time and p.accepts_tips }}">
+        <td><a href="./{{ friend.liberapay_slug }}/">{{ friend.friendly_name }}</a></td>
+        <td>{{ _("Yes") if p.join_time else _("No") }}</td>
+        <td>{{ _('hidden') if p.hide_receiving else p.receiving and format_currency(p.receiving, 'EUR') or '0' }}</td>
+        <td>{{ tip_form(tippee=tippee, inline=True) if p.accepts_tips else
+               _("{0} doesn't accept donations", friend.friendly_name) }}</td>
+    </tr>
+    % endfor
+    % if pages_urls
+        % from 'templates/pagination.html' import pages_links with context
+        <tr><td colspan="5">{{ pages_links(pages_urls) }}</td></tr>
+    % endif
+</table>
+{{ limitation_note() }}
+% endif
+
+% endblock

@@ -1,0 +1,123 @@
+from aspen import Response
+
+from liberapay.exceptions import AuthRequired
+from liberapay.models.account_elsewhere import AccountElsewhere
+
+[--------]
+
+if user.ANON:
+    raise AuthRequired
+
+account_id = request.qs['id']
+account = AccountElsewhere.from_id(account_id)
+token = request.headers.cookie.get('connect_%s' % account_id)
+if not token or not account.check_connect_token(token.value):
+    raise Response(400, 'bad connect token "%s"' % token)
+
+other = account.participant
+user_accounts_dict = user.get_accounts_elsewhere()
+user_accounts = user_accounts_dict.values()
+other_accounts = other.get_accounts_elsewhere().values()
+abandoned_account = user_accounts_dict.get(account.platform, None)
+
+title = _("Please Confirm")
+
+[--------]
+
+% extends "templates/base.html"
+% block content
+<div class="on-confirm">
+
+    <p><img class="platform-icon" src="{{ account.platform_data.icon }}" />
+    {{ _("{0} is connected to {1} on Liberapay.",
+         '<span class="highlight">%s</span>'|safe % account.friendly_name,
+         ('<a href="/{0}/">{0}</a>'|safe).format(other.username)) }}
+    {{ _("Transfer it?") }}
+    </p>
+
+    <h3>{{ _("How the accounts are now") }}</h3>
+
+    <div class="row">
+        <div class="col-sm-2">
+            <b>{{ user.username }}</b><br />
+            % for account in user_accounts
+                <img src="{{ account.platform_data.icon }}"
+                     alt="{{ account.platform }}"
+                     class="platform-icon" />
+                {{ account.friendly_name }}<br />
+            % endfor
+        </div>
+        <div class="col-sm-2 other">
+            <b>{{ other.username }}</b><br />
+            % for other_account in other_accounts
+                <img src="{{ other_account.platform_data.icon }}"
+                     alt="{{ other_account.platform }}"
+                     class="platform-icon" />
+                <span class="{{ 'highlight' if other_account.platform == account.platform }}">
+                    {{ other_account.friendly_name }}<br />
+                </span>
+            % endfor
+        </div>
+    </div>
+
+
+    <h3>{{ _("How the accounts will be after the transfer") }}</h3>
+
+    <div class="row">
+        <div class="col-sm-2">
+            <b>{{ user.username }}</b><br />
+            % for user_account in user_accounts
+                % if user_account != abandoned_account
+                <span class="account-elsewhere">
+                    <img src="{{ user_account.platform_data.icon }}"
+                         alt="{{ user_account.platform }}"
+                         class="platform-icon" />
+                    {{ user_account.friendly_name }}<br />
+                </span>
+                % endif
+            % endfor
+
+            <span class="account-elsewhere">
+                <img src="{{ account.platform_data.icon }}" alt="{{ account.platform }}"
+                    class="platform-icon" />
+                <span class="highlight">
+                    {{ account.friendly_name }}<br />
+                </span>
+            </span>
+        </div>
+        <div class="col-sm-2 other">
+            <b>{{ other.username }}</b><br />
+            % for other_account in other_accounts
+                % if other_account.platform != account.platform
+                    <span class="account-elsewhere">
+                        <img src="{{ other_account.platform_data.icon }}"
+                             alt="{{ other_account.platform }}"
+                             class="platform-icon" />
+                        {{ other_account.friendly_name }}<br />
+                    </span>
+                % endif
+            % endfor
+        </div>
+        % if abandoned_account
+        <div class="abandoned">
+            {{ _("Abandoned:") }}<br/><br/>
+            <span class="account-elsewhere">
+                <img src="{{ abandoned_account.platform_data.icon }}" />
+                {{ abandoned_account.friendly_name }}<br />
+            </span>
+        </div>
+        % endif
+    </div>
+
+
+    <h3>{{ _("Transfer it?") }}</h3>
+
+    <form action="/on/take-over.html" method="POST">
+        <input type="hidden" name="account_id" value="{{ account_id }}" />
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <button name="should_transfer" value="yes" class="btn btn-success">{{ _("Yes") }}</button>
+        <button name="should_transfer" value="no" class="btn btn-default" >{{ _("No") }}</button>
+    </form>
+
+</div>
+% endblock

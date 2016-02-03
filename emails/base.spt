@@ -1,0 +1,31 @@
+[---] text/html
+<div style="font: normal 14px/21px Arial, sans-serif; color: #333;">
+
+<div>{{ _("Greetings,") }}</div>
+
+$body
+
+<div style="color: #999; padding: 21px 0 0;">
+    <div>
+        {{ _("Something not right? Reply to this email for help.") }}
+    </div>
+    <div style="font-size: 12px; padding-top: 10px;">
+        <a href="https://liberapay.com/about/me/emails/"
+           style="text-decoration: underline;">{{
+            _("Change your email settings")
+        }}</a>.
+    </div>
+</div>
+
+</div>
+
+[---] text/plain
+{{ _("Greetings,") }}
+
+$body
+
+{{ _("Something not right? Reply to this email for help.") }}
+
+----
+
+{{ _("Change your email settings") }}: https://liberapay.com/about/me/emails/

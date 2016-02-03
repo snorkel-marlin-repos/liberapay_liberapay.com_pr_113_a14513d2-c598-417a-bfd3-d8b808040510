@@ -1,0 +1,52 @@
+% extends "templates/base.html"
+% from 'templates/avatar-url.html' import avatar_img with context
+
+% block head_early
+    % if participant.hide_from_search
+    <meta name="robots" content="noindex,nofollow" />
+    % endif
+% endblock
+
+% block before_content
+{% block profile_btn %}{% endblock %}
+<div class="row">
+<div class="col-xs-12 col-md-8 col-md-offset-2">
+    <div class="panel panel-default profile-box">
+        <div class="panel-body row">
+            <div class="avatar col-xs-3">
+                <a href="/{{ participant.username }}/">{{ avatar_img(participant) }}</a>
+
+                % if participant.join_time
+                <p>{{ _('Joined {0} ago.', to_age(participant.join_time)) }}</p>
+                % endif
+                % if participant.status == 'closed'
+                <p>{{ _('Closed {0} ago.', to_age(participant.closed_time)) }}</p>
+                % endif
+            </div>
+
+            <div class="col-xs-9">
+            {% block box %}{% include "templates/profile-box.html" %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    % block subnav
+        % set show_income = not participant.hide_receiving and participant.accepts_tips
+        {% set pages = filter_profile_subnav(user, participant, [
+            ('/',            _('Profile'),   True,           True),
+            ('/income/',     _('Income'),    True,           show_income),
+            ('/wallet/',     _('Wallet'),    False,          False),
+        ]) %}
+        % if len(pages) > 1
+            % from "templates/nav.html" import nav with context
+            <ul class="nav nav-tabs">
+                {{ nav(pages, base='/'+participant.username) }}
+            </ul>
+        % endif
+    % endblock
+% endblock
+
+% block after_content
+</div>
+</div>
+% endblock

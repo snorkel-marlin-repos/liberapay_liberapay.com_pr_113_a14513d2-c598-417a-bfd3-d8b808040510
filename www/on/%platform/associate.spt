@@ -1,0 +1,75 @@
+from base64 import b64decode
+import json
+
+from aspen import log, resources, Response
+from requests_oauthlib.oauth1_session import TokenRequestDenied
+
+from liberapay import canonical_scheme, canonical_host
+from liberapay.exceptions import AuthRequired
+from liberapay.models.account_elsewhere import AccountElsewhere
+from liberapay.models.participant import NeedConfirmation
+
+[-----------------------------]
+
+platform = getattr(website.platforms, request.path['platform'], None)
+if platform is None:
+    raise Response(404)
+
+# Get the query id from the querystring
+query_id = platform.get_query_id(request.qs)
+
+# Check that we have a cookie that matches the query id (CSRF prevention)
+cookie_name = (platform.name+'_'+query_id).encode('ascii')
+try:
+    cookie_value = request.headers.cookie[cookie_name].value
+except KeyError:
+    raise Response(400, 'Missing cookie')
+if not cookie_value:
+    raise Response(400, 'Empty cookie')
+query_data, action, then, action_user_id = json.loads(b64decode(cookie_value))
+then = b64decode(then)  # double-b64encoded to avoid other encoding issues w/ qs
+
+# Finish the auth process, the returned session is ready to use
+url = canonical_scheme+'://'+canonical_host+request.line.uri.raw
+try:
+    sess = platform.handle_auth_callback(url, query_id, query_data)
+except TokenRequestDenied as e:
+    raise Response(502, _("{0} returned an error, please try again later.",
+                          platform.display_name))
+
+# Get the user's info from the platform's API and upsert it in the DB
+account = AccountElsewhere.upsert(platform.get_user_self_info(sess))
+participant = account.participant
+
+if action_user_id and account.user_id != action_user_id:
+    claimed_account = AccountElsewhere.upsert(platform.get_user_info('user_id', action_user_id))
+    if not claimed_account.is_team:
+        then = '/on/%s/%s/failure.html'
+        response.redirect(then % (platform.name, claimed_account.liberapay_slug))
+    if not platform.is_team_admin(claimed_account.user_name, sess):
+        then = '/on/%s/%s/failure.html?team=true'
+        response.redirect(then % (platform.name, claimed_account.liberapay_slug))
+    account = claimed_account
+
+log('%s user "%s" wants to %s' % (platform.name, account.user_id, action))
+
+if action == 'connect':
+    if user.ANON:
+        raise AuthRequired
+    try:
+        user.take_over((platform.name, account.user_id))
+    except NeedConfirmation:
+        token, expires = account.make_connect_token()
+        response.set_cookie(b'connect_%s' % account.id, token, expires)
+        response.redirect('/on/confirm.html?id=%s' % account.id)
+
+elif action in {'lock', 'unlock'}:
+    account.participant.update_goal(-1 if action == 'lock' else None)
+
+else:
+    raise Response(400)
+
+response.erase_cookie(cookie_name)
+response.redirect(then)
+
+[-----------------------------] text/plain

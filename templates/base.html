@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#">
+    {% block head_early %}{% endblock %}
+    <title>{% if title %}{% if subhead %}{{ subhead }} - {% endif %}{{ title }} - {% endif %}Liberapay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ website.asset('liberapay/icon.16.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ website.asset('bootstrap/3.3.6/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ website.asset('base.css') }}" type="text/css">
+    {% block head %}{% endblock %}
+    <script>
+        // http://stackoverflow.com/questions/7131909/facebook-callback-appends-to-return-url
+        if (window.location.hash == '#_=_') {
+            window.location.hash = ''; // leaves a # behind
+        }
+    </script>
+</head>
+% from 'templates/nav.html' import nav with context
+<body>
+
+<div id="wrapper">
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <ul class="nav navbar-nav pull-left">
+                <li><a class="navbar-brand" href="/">Liberapay</a></li>
+                {{ nav([('/explore/', _('Explore')), ('/search', _('Search')), ('/about/', _('About'))]) }}
+            </ul>
+            <ul class="nav navbar-nav pull-right">
+            % if user.ANON
+                <li>{% include "templates/sign-in-link.html" %}</li>
+            % else
+                <li>{% include "templates/profile-dropdown.html" %}</li>
+                <li><a href="/{{ user.username }}/notifications"
+                       title="{{ _('Notifications') }}"
+                       style="color: {{ '#e11' if user.pending_notifs else '#888' }}">
+                    <span class="glyphicon glyphicon-info-sign"></span>
+                    <span class="sr-only">{{ _("Notifications") }}</span>
+                    % if user.pending_notifs
+                        <span class="pending-notifs">{{ user.pending_notifs }}</span>
+                    % endif
+                </a></li>
+                <li>{% include "templates/sign-out.html" %}</li>
+            % endif
+            </ul>
+        </div>
+    </nav>
+
+    <div id="main" class="container">
+        % block before_content
+            {% block heading %}{% if title %}<h1>{{ title }}</h1>{% endif %}{% endblock %}
+            <div id="subnav">{% block subnav %}{% endblock %}</div>
+        % endblock
+        {% block content %}{% endblock %}
+        {% block after_content %}{% endblock %}
+    </div>
+
+    <footer role="navigation">
+        <a href="/about/">{{ _("About") }}</a>
+        <a href="/about/contact">{{ _("Contact Us") }}</a>
+        <a href="/about/faq">{{ _("FAQ") }}</a>
+        <a href="/about/legal">{{ _("Legal") }}</a>
+        <a href="https://twitter.com/liberapaye">Twitter</a>
+        <a href="https://github.com/liberapay/liberapay.com">GitHub</a>
+    </footer>
+</div>
+
+<script src="{{ website.asset('jquery.min.js') }}"></script>
+<script src="{{ website.asset('bootstrap/3.3.6/js/bootstrap.min.js') }}"></script>
+<script src="{{ website.asset('base.js') }}"></script>
+{% if user.is_admin %}<script src="{{ website.asset('admin.js') }}"></script>{% endif %}
+
+<script>
+    $(function(){
+        % if not user.ANON
+        Liberapay.username = {{ to_javascript(user.username)|safe }};
+        % endif
+        Liberapay.init();
+    });
+</script>
+
+{% block scripts %}{% endblock %}
+
+% set _success = request.qs.get('success')
+% if _success
+<div id="notification-area"><div class="notification notification-success">{{
+    b64decode(_success).decode('utf8')
+}}<span class="close">&times;</span></div></div>
+% endif
+
+</body>
+</html>

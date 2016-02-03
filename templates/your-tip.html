@@ -1,0 +1,39 @@
+% macro tip_form(tippee=None, tip=None, inline=False, disabled='')
+    % set pledging = tippee.__class__.__name__ == 'AccountElsewhere'
+    % set tip = tip or user.get_tip_to(tippee.participant or tippee)
+    <form action="/~{{ assert(tip.tippee) }}/tip" method="POST" class="your-tip">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <input type="hidden" name="back_to" value="{{ request.line.uri }}" />
+        % if inline
+            {{ tip_input(tip, disabled, small=True, pledging=pledging) }}
+        % else
+            <h4>{{ _('Your donation') }}</h4>
+            <div class="form-group">
+                {{ tip_input(tip, disabled, pledging=pledging) }}
+            </div>
+            <p>{{ _("Not sure how much to donate? Here are some standard amounts:") }}</p>
+            % for msg, amount in constants.STANDARD_TIPS
+                % set amount_str = format_decimal(amount, '#,##0.00')
+                <a class="btn btn-default" href="?amount={{ amount_str }}"
+                    >{{ _(msg, amount_str) }}</a>
+            % endfor
+            <br><br>
+        % endif
+    </form>
+% endmacro
+
+% macro tip_input(tip, disabled='', small=False, pledging=False)
+    <div class="input-group">
+        <div class="input-group-addon">€</div>
+        <input type="text" name="amount" id="amount"
+               class="amount form-control {{ 'input-sm' if small }}"
+               value="{{ request.qs.get('amount') or format_decimal(tip.amount) }}"
+               {{ disabled }} />
+        <div class="input-group-addon">{{ _("per week") }}</div>
+        <div class="input-group-btn">
+            <button class="btn btn-success {{ 'btn-sm' if small }}" {{ disabled }}>{{
+                _("Modify") if tip.amount > 0 else _("Pledge") if pledging else _("Donate")
+            }}</button>
+        </div>
+    </div>
+% endmacro

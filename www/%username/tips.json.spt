@@ -1,0 +1,46 @@
+from itertools import chain
+
+from aspen import Response
+from liberapay.utils import get_participant
+
+[-----------------------]
+participant = get_participant(state, restrict=True)
+if user != participant:
+    raise Response(403) # disallow admins
+
+if request.method == 'POST':
+    out = []
+    new_tips = request.body
+    seen = set()
+    for tip in new_tips:
+        seen.add(tip['username'])
+        one = {"username": tip['username']}
+        try:
+            amount = participant.set_tip_to( tip['username']
+                                           , parse_decimal(tip['amount'])
+                                            )['amount']
+        except Exception as exc:
+            amount = "error"
+            one['error'] = exc.__class__.__name__
+        one['amount'] = str(amount)
+        out.append(one)
+
+    if request.qs.get('also_prune', 'false').lower() in ('true', '1', 'yes'):
+        old_tips = participant.get_current_tips()
+        for tip in old_tips:
+            if tip['username'] not in seen:
+                participant.set_tip_to(tip['username'], '0.00')
+
+else:
+    tips, total, pledges, pledges_total = participant.get_giving_for_profile()
+
+    out = []
+    for tip in chain(tips, pledges):
+        if tip.amount == 0:
+            continue
+        out.append({ "username": tip.username
+                   , "amount": str(tip.amount)
+                    })
+
+[---] application/json via json_dump
+out

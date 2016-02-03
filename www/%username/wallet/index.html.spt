@@ -1,0 +1,194 @@
+from datetime import datetime
+
+from aspen import Response
+
+from liberapay.utils import get_participant
+from liberapay.utils.history import iter_payday_events
+
+[-----------------------------------------------------------------------------]
+
+participant = get_participant(state, restrict=True)
+title = participant.username
+subhead = _("Wallet")
+subpath = 'history/' if user.is_admin else ''
+admin_override = user.is_admin and (participant != user or 'override' in request.qs)
+translated_status = { None:         ''
+                    , 'pre':        _('pre')
+                    , 'created':    _('pending')
+                    , 'failed':     _('failed')
+                    , 'succeeded':  _('succeeded')
+                     }
+
+current_year = datetime.utcnow().year
+try:
+    year = int(request.qs.get('year', current_year))
+except ValueError:
+    raise Response(400, "bad year")
+events = iter_payday_events(website.db, participant, year)
+years = []
+if participant.join_time:
+    years = list(range(current_year, participant.join_time.year-1, -1))
+
+if participant == user:
+    BALANCE = _("Your balance is {0}.", Money(participant.balance, "EUR"))
+else:
+    BALANCE = _("Their balance is {0}.", Money(participant.balance, "EUR"))
+
+[-----------------------------------------------------------------------------]
+% extends "templates/settings.html"
+% block content
+
+<p>{{ BALANCE }}</p>
+
+% if participant.balance > 0
+    <p><a class="btn btn-default" href="{{ participant.path('wallet/payout/Li4=') }}"
+          >{{ _("Withdraw money") }}</a></p>
+% endif
+
+<h3>{{ _("Account Statement") }}</h3>
+
+% if len(years) > 1
+<ul class="nav nav-pills">
+    % for y in years
+        <li><a href="?year={{ y }}" class="{{ 'active' if y == year }}">{{ y }}</a></li>
+    % endfor
+</ul>
+% endif
+
+<div class="row col-md-8">
+<table class="table table-condensed" id="history">
+% for event in events
+    % if event['kind'] == 'totals'
+    <tr><td colspan="8" class="totals">
+        {{ _("Total given: {0}", Money(event['given'], "EUR")) }}
+            % if event['given']
+            (<a href="export.csv?year={{ year }}&amp;key=given&amp;mode=aggregate">{{
+                _("Export as CSV")
+            }}</a>)
+            % endif
+        <br>
+        {{ _("Total received: {0}", Money(event['received'], "EUR")) }}
+    </td></tr>
+    % elif event['kind'] == 'day-open'
+    <tr>
+        <th colspan="8"><h3>
+            {{ event['date'].strftime("%B %d, %Y").replace(' 0', ' ') }}
+            % if event['payday_number']
+                &mdash; {{ _("Weekly Payday #{0}", event['payday_number']) }}
+            % endif
+        </h3></th>
+    </tr>
+    <tr class="head">
+        <td colspan="3" class="outside">&larr; {{ _("Outside") }}</td>
+        <td colspan="5" class="inside">{{ _("Inside Liberapay") }} &rarr;</td>
+    </tr>
+    <tr class="head">
+        <td class="bank">{{ _("Bank") }}</td>
+        <td class="card">{{ _("Card") }}</td>
+        <td class="fees">{{ _("Fees") }}</td>
+        <td class="credits">{{ _("Credits") }}</td>
+        <td class="debits">{{ _("Debits") }}</td>
+        <td class="balance">{{ _("Balance") }}</td>
+        <td class="status">{{ _("Status") }}</td>
+        <td class="notes">{{ _("Notes") }}</td>
+    </tr>
+    % elif event['kind'] == 'credit'
+    <tr>
+        <td class="bank">{{ -event['amount'] }}</td>
+        <td class="card"></td>
+        <td class="fees">{{ event['fee'] }}</td>
+        <td class="credits"></td>
+        <td class="debits">{{ -event['amount'] + event['fee'] }}</td>
+        <td class="balance">{{ event['balance'] }}</td>
+        <td class="status">{{ translated_status[event['status']] }}</td>
+        <td class="notes">
+        {{ event['note'] or '' }}
+        % if event['recorder']
+            &mdash; <a href="/{{ event['recorder'] }}/">{{ event['recorder'] }}</a>
+        % endif
+        </td>
+    </tr>
+    % elif event['kind'] == 'charge'
+    <tr>
+        <td class="bank"></td>
+        <td class="card">{{ event['amount'] + event['fee'] }}</td>
+        <td class="fees">{{ event['fee'] }}</td>
+        <td class="credits">{{ event['amount'] }}</td>
+        <td class="debits"></td>
+        <td class="balance">{{ event['balance'] }}</td>
+        <td class="status">{{ translated_status[event['status']] }}</td>
+        <td class="notes">
+        {{ event['note'] or '' }}
+        % if event['recorder']
+            &mdash; <a href="/~{{ event['recorder'] }}/">{{ event['recorder'] }}</a>
+        % endif
+        % if event['status'] == 'succeeded'
+            (<a href="../receipts/{{ event['id'] }}.html">{{ _("Receipt").lower() }}</a>)
+        % endif
+        </td>
+    </tr>
+    % elif event['kind'] == 'transfer'
+    <tr>
+        <td class="bank"></td>
+        <td class="card"></td>
+        <td class="fees"></td>
+
+        % if event['tippee'] == participant.id
+        <td class="credits">{{ event['amount'] }}</td>
+        <td class="debits"></td>
+        % else
+        <td class="credits"></td>
+        <td class="debits">{{ event['amount'] }}</td>
+        % endif
+
+        <td class="balance">{{ event['balance'] }}</td>
+
+        <td class="status"></td>
+        <td class="notes">
+        % set context = event['context']
+        % if event['tippee'] == participant.id
+            % if admin_override
+                {{ context }} from
+                <a href="/{{ event['username'] }}/{{ subpath }}">{{ event['username'] }}</a>
+                % if event['team']
+                    for team <a href="/{{ event['team_name'] }}/">{{ event['team_name'] }}</a>
+                % endif
+            % elif context == 'take'
+                {{ _("anonymous donation for your role in the {0} team",
+                     ('<a href="/{0}/">{0}</a>'|safe).format(event['team_name'])) }}
+            % else
+                {{ _("anonymous donation") }}
+            % endif
+        % else
+            % set to = ('<a href="/{0}/">{0}</a>'|safe).format(event['username'])
+            % if context == 'final-gift'
+                {{ _("final gift to {0}", to) }}
+            % elif context == 'take'
+                {{ _("donation to {0} for their role in the {1} team", to,
+                     ('<a href="/{0}/">{0}</a>'|safe).format(event['team_name'])) }}
+            % else
+                {{ _("donation to {0}", to) }}
+            % endif
+        % endif
+        </td>
+
+    </tr>
+    % elif event['kind'] == 'day-close'
+    <tr>
+        <td class="bank"></td>
+        <td class="card"></td>
+        <td class="fees"></td>
+        <td class="credits"></td>
+        <td class="debits"></td>
+        <td class="balance">{{ event['balance'] }}</td>
+        <td class="status"></td>
+        <td class="notes"></td>
+    </tr>
+    % endif
+% else
+    <p>{{ _("No transactions to show.") }}</p>
+% endfor
+</table>
+</div>
+
+% endblock

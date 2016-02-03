@@ -1,0 +1,54 @@
+from liberapay.utils import get_participant
+
+[---]
+
+participant = get_participant(state, restrict=True)
+title = participant.username
+subhead = _("Widgets")
+profile_url = participant.url()
+
+[---]
+% extends "templates/settings.html"
+% block content
+<div class="col0">
+
+    <h3>{{ _("Donation Button") }}</h3>
+
+    <p>{{ _("Use this code to add a donation button on your website:") }}</p>
+
+    <pre>&lt;script src="{{ profile_url }}widgets/button.js"&gt;&lt;/script&gt;</pre>
+
+    <p>{{ _("Here's what it looks like:") }}</p>
+
+    <p><script src="button.js"></script></p>
+
+    <h3>{{ _("Static Donation Button") }}</h3>
+
+    <p>{{ _("Use this code to embed a static donation button on your website:") }}</p>
+
+    <pre>&lt;a href="{{ profile_url }}"&gt;&lt;img src="https://static.liberapay.com/widgets/donate.svg"&gt;&lt;/a&gt;</pre>
+
+    <p>{{ _("Here's what it looks like:") }}</p>
+
+    <a href="{{ profile_url }}"><img src="/assets/widgets/donate.svg"></a>
+
+    <h3>{{ _("Giving & Receiving Widgets") }}</h3>
+
+    <p>{{ _("Use this code to add a Liberapay \"receiving\" widget on your website:") }}</p>
+
+    <pre>&lt;script src="{{ profile_url }}widgets/receiving.js"&gt;&lt;/script&gt;</pre>
+
+    <p>{{ _("Here's what it looks like:") }}</p>
+
+    <p><script src="receiving.js"></script></p>
+
+    <p>{{ _("Or, if you'd like to include a \"giving\" widget, you can use this:") }}</p>
+
+    <pre>&lt;script src="{{ profile_url }}widgets/giving.js"&gt;&lt;/script&gt;</pre>
+
+    <p>{{ _("Here's what it looks like:") }}</p>
+
+    <p><script src="giving.js"></script></p>
+
+</div>
+% endblock

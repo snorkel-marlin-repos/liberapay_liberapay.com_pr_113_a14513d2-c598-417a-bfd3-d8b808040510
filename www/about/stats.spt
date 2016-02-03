@@ -1,0 +1,173 @@
+# coding: utf8
+from __future__ import division, print_function, unicode_literals
+
+[--------------------------------------------------------]
+
+title = _("Stats")
+db = website.db
+escrow = db.one("SELECT sum(balance) FROM participants", default=0)
+npeople = db.one("SELECT count(*) FROM participants WHERE status = 'active' AND is_suspicious IS NOT true")
+transfer_volume = db.one("SELECT transfer_volume FROM paydays ORDER BY ts_end DESC LIMIT 1", default=0)
+tips_stats = db.one("""
+    SELECT count(*), avg(amount), sum(amount)
+      FROM current_tips
+      JOIN participants p ON p.id = tipper
+      JOIN participants p2 ON p2.id = tippee
+     WHERE amount > 0
+       AND is_funded
+       AND p.status = 'active'
+       AND p2.status = 'active'
+       AND p.is_suspicious IS NOT true
+       AND p2.is_suspicious IS NOT true
+""")
+tip_n = getattr(tips_stats, 'count', None) or 0
+average_tip = getattr(tips_stats, 'avg', None) or 0
+total_backed_tips = getattr(tips_stats, 'sum', None) or 0
+
+average_tippees = int(db.one("""\
+    SELECT round(avg(ntippees))
+      FROM ( SELECT count(tippee) as NTIPPEES
+               FROM current_tips
+               JOIN participants p ON p.id = tipper
+               JOIN participants p2 on p2.id = tippee
+              WHERE amount > 0
+                AND is_funded
+                AND p.status = 'active'
+                AND p2.status = 'active'
+                AND p.is_suspicious IS NOT true
+                AND p2.is_suspicious IS NOT true
+           GROUP BY tipper
+           ) AS bar
+""", default=0))
+
+TIP_DISTRIBUTION = """
+    SELECT amount, count(amount)
+      FROM current_tips
+      JOIN participants p ON p.id = tipper
+      JOIN participants p2 on p2.id = tippee
+     WHERE amount > 0
+       AND is_funded
+       AND p.status = 'active'
+       AND p2.status = 'active'
+       AND p.is_suspicious IS NOT true
+       AND p2.is_suspicious IS NOT true
+  GROUP BY amount
+  ORDER BY amount
+"""
+
+def get_tip_distribution():
+    tip_distribution = db.all(TIP_DISTRIBUTION)
+    r = {}
+    for row in tip_distribution:
+        percentage = row.count * 1.0 / tip_n
+        r[str(row.amount)] = (row.count, percentage)
+    return r
+
+
+last_payday = db.one("select * from paydays order by ts_end desc limit 1", back_as="dict")
+if last_payday:
+    nactive = last_payday['nactive']
+    ngivers = last_payday['ntippers']
+    nreceivers = last_payday['ntippees']
+    noverlap = ngivers + nreceivers - nactive
+else:
+    nactive = ngivers = nreceivers = noverlap = 0
+
+
+def out():
+    names = ['transfer_volume', 'average_tip', 'average_tippees',
+             'total_backed_tips', 'tip_n', 'escrow',
+             'ngivers', 'nreceivers', 'noverlap', 'nactive']
+    d = globals()
+    r = {name: d[name] for name in names}
+    r['tip_distribution'] = get_tip_distribution()
+    return r
+
+[----------------------------------------------------------] text/html
+
+% extends "templates/about.html"
+
+% block scripts
+<script>
+    jQuery.get('/about/charts.json', Liberapay.charts.make);
+</script>
+{{ super() }}
+% endblock
+
+% block content
+
+    <p>{{ _("Liberapay was launched {0} ago and has {1} users.",
+            to_age(constants.LAUNCH_TIME), npeople) }}</p>
+
+    <p>{{ _("{0} is escrowed within Liberapay.", Money(escrow, 'EUR')) }}</p>
+
+    % if last_payday
+    <p>
+        {{ _(
+            "The last payday was {0} ago and transferred {1} between {2} users.",
+            to_age(last_payday.ts_start), Money(transfer_volume, 'EUR'), nactive
+        ) }}<br />
+        {{ _("{0} participants gave money.", ngivers) }}<br />
+        {{ _("{0} received money.", nreceivers) }}<br />
+        {{ _("{0} did both.", noverlap) }}
+    </p>
+    % endif
+
+    <p>{{ ngettext("On average, people who donate give {0} each to one other user.",
+                   "On average, people who donate give {0} each to {n} other users.",
+                   average_tippees, Money(average_tip, 'EUR')) }}</p>
+
+    <div class="two-column">
+        <div class="chart-wrapper">
+            <a name="users"></a>
+            <h3>{{ _("Total Users") }}</h3>
+            <p class="note">{{ _("Anyone who's ever created an account on Liberapay") }}</p>
+            <div class="chart" data-chart="total_users"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+
+        <div class="chart-wrapper">
+            <a name="active"></a>
+            <h3>{{ _("Active Users") }}</h3>
+            <p class="note">{{ _("Users that gave and/or received money within Liberapay (per week)") }}</p>
+            <div class="chart" data-chart="active_users"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+
+        <div class="chart-wrapper">
+            <a name="cumulative-gifts"></a>
+            <h3>{{ _("Total Gifts (€)") }}</h3>
+            <p class="note">{{ _("Money transferred within Liberapay (cumulative)") }}</p>
+            <div class="chart" data-chart="total_gifts"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+
+        <div class="chart-wrapper">
+            <a name="gifts"></a>
+            <h3>{{ _("Weekly Gifts (€)") }}</h3>
+            <p class="note">{{ _("Money transferred within Liberapay (per week)") }}</p>
+            <div class="chart" data-chart="weekly_gifts"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+
+        <div class="chart-wrapper newline">
+            <a name="charges"></a>
+            <h3>{{ _("Deposits (€)") }}</h3>
+            <p class="note">{{ _("Money moved into Liberapay") }}</p>
+            <div class="chart" data-chart="charges"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+
+        <div class="chart-wrapper">
+            <a name="withdrawals"></a>
+            <h3>{{ _("Withdrawals (€)") }}</h3>
+            <p class="note">{{ _("Money moved out of Liberapay") }}</p>
+            <div class="chart" data-chart="withdrawals"></div>
+            <div class="x-axis">{{ _("weeks") }}</div>
+        </div>
+    </div>
+
+% endblock
+
+[----------------------------------------------------------] application/json via json_dump
+out()

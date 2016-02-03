@@ -1,0 +1,55 @@
+[---]
+title = _("Introduction")
+[---] text/html
+% extends "templates/about.html"
+% block content
+<div class="row"><div class="col-md-8">
+
+    <h3 id="what">{{ _("What is Liberapay?") }}</h3>
+
+    <p>{{ _("Liberapay is a way to donate money recurrently to people whose work you appreciate.") }}</p>
+
+    <p>{{ _(
+        "Payments come with no strings attached. You don't know exactly who is "
+        "giving to you, and donations are capped at {0} per week per donor to "
+        "dampen undue influence."
+        , Money(constants.MAX_TIP, 'EUR')
+    ) }}</p>
+
+    <p>{{ _(
+        "Donations are public. By default, the total amount you give and the "
+        "total amount you receive are public (you can opt out of sharing this "
+        "info)."
+    ) }}</p>
+
+    <p>{{ _(
+        "Liberapay does not take a cut of payments, recipients get the full face "
+        "value. The service is funded by the donations to {0}its own account{1}."
+        , '<a href="/Liberapay/">'|safe, '</a>'|safe
+    ) }}</p>
+
+    <p>{{ _(
+        "Liberapay is an open project, you can help us {1}translate it{0}, "
+        "{2}improve its code{0}, and {3}manage its legal entity{0}. If you do "
+        "so you'll be able to join {4}the Liberapay team{0} and receive a "
+        "share of the money that our users donate to keep the service running.",
+        '</a>'|safe,
+        '<a href="https://hosted.weblate.org/engage/liberapay/">'|safe,
+        '<a href="https://github.com/liberapay/liberapay.com">'|safe,
+        '<a href="https://github.com/liberapay/liberapay.org">'|safe,
+        '<a href="/Liberapay/">'|safe
+    ) }}</p>
+
+
+    <h3 id="who">{{ _("Who is Liberapay?") }}</h3>
+
+    <p>{{ _(
+        "Liberapay is a non-profit organization {0}founded in 2015 in France{1} by {2} and {3}.",
+        '<a href="https://github.com/liberapay/liberapay.org/issues/2">'|safe,
+        '</a>'|safe,
+        '<a href="/Changaco/">Changaco</a>'|safe,
+        '<a href="/Zatalyz/">Zatalyz</a>'|safe,
+    ) }}</p>
+
+</div></div>
+% endblock

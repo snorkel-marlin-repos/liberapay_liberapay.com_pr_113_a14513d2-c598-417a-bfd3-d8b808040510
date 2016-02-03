@@ -1,0 +1,44 @@
+from aspen import Response
+
+from liberapay.models.account_elsewhere import get_account_elsewhere
+
+[---]
+
+platform, account = get_account_elsewhere(website, state, api_lookup=False)
+name = account.friendly_name
+
+team = request.qs.get('team', '').lower() == 'true'
+
+title = _("Failure")
+
+[---]
+% extends "templates/base.html"
+% block content
+<div class="alert alert-danger">
+
+    % if team
+
+    <h4>{{ _("Are you really an administrator of the {0} team?", name) }}</h4>
+
+    <p>{{ _("Your attempt to claim this account failed because you're logged "
+            "into {0} as someone who isn't an administrator of the {1} team. "
+            "Please sign out and {2}try again{3}.",
+            platform.display_name,
+            name,
+            '<a href="./">'|safe,
+            '</a>'|safe) }}</p>
+
+    % else
+
+    <h4>{{ _("Are you really {0}?", name) }}</h4>
+
+    <p>{{ _("Your attempt to claim this account failed because you're logged "
+            "into {0} as someone else. Please sign out and {1}try again{2}.",
+            platform.display_name,
+            '<a href="./">'|safe,
+            '</a>'|safe) }}</p>
+
+    % endif
+
+</div>
+% endblock

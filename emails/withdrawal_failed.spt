@@ -1,0 +1,18 @@
+{{ _("Withdrawal failure") }}
+
+[---] text/html
+{{ _("We tried to transfer {0} from your Liberapay wallet to your bank account, but the transfer failed with this message:",
+     Money(exchange.amount - exchange.fee, 'EUR')) }}
+
+<pre>{{ exchange.note }}</pre>
+
+<a href="{{ participant.url('wallet/payout/') }}"
+   style="{{ button_style }}">{{ _("Try again") }}</a>
+
+[---] text/plain
+{{ _("We tried to transfer {0} from your Liberapay wallet to your bank account, but the transfer failed with this message:",
+     Money(exchange.amount - exchange.fee, 'EUR')) }}
+
+{{ exchange.note }}
+
+{{ _("You can try again: {0}", participant.url('wallet/payout/')) }}

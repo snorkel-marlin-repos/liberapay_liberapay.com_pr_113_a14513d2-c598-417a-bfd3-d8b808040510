@@ -1,0 +1,128 @@
+from aspen import Response
+
+from liberapay.billing import mangoapi
+from liberapay.models.exchange_route import ExchangeRoute
+from liberapay.utils import get_participant
+
+[-------------------]
+
+participant = get_participant(state, restrict=True)
+
+exchange = website.db.one("""
+    SELECT *
+      FROM exchanges
+     WHERE id = %s
+       AND participant = %s
+       AND amount > 0
+""", (request.path['exchange_id'], participant.id))
+if exchange is None or exchange.status != 'succeeded':
+    raise Response(404)
+
+card = None
+route = ExchangeRoute.from_id(exchange.route)
+if route.network == 'mango-cc':
+    card = mangoapi.cards.Get(route.address)
+
+account = participant.get_mangopay_account()
+
+[-------------------]
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #EEE;
+    }
+    body, table {
+        font: normal 12pt/14pt 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    #page {
+        width: 3in;
+        border: 1px solid black;
+        background: white;
+        margin: 1pc auto;
+    }
+    #page-padding {
+        padding: 0.25in;
+    }
+    h1 {
+        margin: 0;
+        padding: 1.5em 0 0.5em;
+    }
+    table {
+        margin: 1em 0;
+    }
+    th, td {
+        vertical-align: top;
+        margin: 0;
+        padding: 0;
+    }
+    th {
+        text-align: left;
+        padding-right: 1em;
+    }
+    td {
+        text-align: right;
+    }
+    .total {
+        font-size: 14pt;
+    }
+    #txnid {
+        border-top: 1px solid black;
+        margin: 0;
+        padding: 0;
+        font-size: 8.5pt;
+        line-height: 8.5pt;
+        text-transform: uppercase;
+        width: 100%;
+    }
+    #txnid td {
+        padding: 3pt 0 0;
+        white-space: nowrap;
+    }
+    #txnid td.date { text-align: left; }
+    #txnid td.mdash { text-align: center; width: 100%; }
+    #txnid td.txnid { text-align: right; }
+</style>
+<div id="page"><div id="page-padding">
+
+    <div>
+        Liberapay (https://liberapay.com/)
+    </div>
+
+    <h1>{{ _("Receipt") }}</h1>
+
+    <div id="their-info">
+        % if participant.kind == 'individual'
+            {{ account.FirstName }} {{ account.LastName }}
+        % elif participant.kind == 'organization'
+            {{ account.Name }}
+            ({{ account.LegalRepresentativeFirstName }} {{ account.LegalRepresentativeLastName }})
+        % endif
+        <br>
+        {{ card.Alias }} ({{ card.CardProvider }})
+    </div>
+
+    <table>
+        <tr>
+            <th>{{ _("Amount:") }}</th>
+            <td>{{ format_currency(exchange.amount, 'EUR') }}</td>
+        </tr>
+        <tr>
+            <th>{{ _("Fee:") }}</th>
+            <td>{{ format_currency(exchange.fee, 'EUR') }}</td>
+        </tr>
+        <tr class="total">
+            <th>{{ _("Total:") }}</th>
+            <td>{{ format_currency(exchange.fee + exchange.amount, 'EUR') }}</td>
+        </tr>
+    </table>
+
+    <table id="txnid">
+        <tr>
+            <td class="date">{{ format_datetime(exchange.timestamp) }}</td>
+            <td class="mdash">&mdash;</td>
+            <td class="txnid">{{ _("Transaction ID: {0}", exchange.id) }}</td>
+        </tr>
+    </table>
+
+</div></div>

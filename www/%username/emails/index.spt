@@ -1,0 +1,73 @@
+from liberapay.notifications import EVENTS, EVENTS_S
+from liberapay.utils import get_participant
+
+[---]
+
+participant = get_participant(state, restrict=True)
+title = participant.username
+subhead = _("Email settings")
+emails = participant.get_emails()
+
+[---] text/html
+% extends "templates/settings.html"
+
+% block content
+
+    <h3>{{ _("Email Addresses (Private)") }}</h3>
+
+    <form action="./modify.json" method="POST" class="js-submit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <ul class="emails">
+        % for email in emails
+            <li class="clearfix">
+                <span class="address">{{ email.address }}</span>
+                % if email.address == participant.email
+                    <span class="label label-primary">{{ _("Primary") }}</span>
+                % else
+                    <button name="remove" value="{{ email.address }}"
+                            class="btn btn-danger btn-sm">{{ _("Remove") }}</button>
+                    % if not email.verified
+                        <span class="label label-warning">{{ _("Unverified") }}</span>
+                        <button name="resend" value="{{ email.address }}"
+                                class="btn btn-default btn-sm">{{ _("Resend email") }}</button>
+                    % else
+                        <span class="label label-success">{{ _("Verified") }}</span>
+                        <button name="set-primary" value="{{ email.address }}"
+                                class="btn btn-primary btn-sm">{{ _("Set as primary") }}</button>
+                    % endif
+                % endif
+            </li>
+        % endfor
+        </ul>
+    </form>
+
+    <form action="./modify.json" method="POST" class="js-submit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <div class="input-group">
+            <input name="email" type="email" class="form-control"
+                   placeholder="{{ _('Email address') }}" />
+            <div class="input-group-btn">
+                <button name="add-email" class="btn btn-default">{{ _("Add") }}</button>
+            </div>
+        </div>
+    </form>
+
+    <h3>{{ _("Notifications") }}</h3>
+
+    <form action="./notifications.json" method="POST" class="js-submit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <input type="hidden" name="fields" value="{{ EVENTS_S }}" />
+        <span>{{ _("Send me notifications via email:") }}</span><br>
+        <div class="checkbox">
+        % for event in EVENTS.values()
+        <label>
+            <input name="{{ event.name }}" type="checkbox" {{ 'checked' if participant.email_notif_bits.__and__(event.bit) }} />
+            {{ _(event.title) }}
+        </label>
+        <br>
+        % endfor
+        </div>
+        <button class="btn btn-default">{{ _("Save changes") }}</button>
+    </form>
+
+% endblock

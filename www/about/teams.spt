@@ -1,0 +1,111 @@
+# encoding: utf8
+
+from aspen import Response
+
+from liberapay.exceptions import AuthRequired, UsernameAlreadyTaken
+from liberapay.models.participant import Participant
+
+[---]
+
+if request.method == 'POST':
+    if user.ANON:
+        raise AuthRequired
+    name = request.body['name']
+    t = Participant.from_username(name)
+    if t:
+        if t.kind == 'group' and t.status == 'closed' and user.id == t.closed_by:
+            with website.db.get_cursor() as c:
+                t.update_status('active', c)
+                t.add_member(user, c)
+        else:
+            raise UsernameAlreadyTaken(name)
+    else:
+        t = user.make_team(name)
+    response.redirect('/'+t.username+'/edit')
+
+title = _("Teams")
+[---] text/html
+% extends "templates/about.html"
+% block content
+<div class="row paragraph"><div class="col-md-8">
+
+<p>{{ _(
+    "A Liberapay team coordinates donations from multiple donors to multiple "
+    "donees. Donors choose how much they want to give, donees decide how to "
+    "share the money, Liberapay computes and executes the transfers from "
+    "donors to donees."
+) }}</p>
+
+<p>{{ _(
+    "Teams are for peer-to-peer donations, they can't be used by a legal "
+    "entity to distribute donations to its members."
+) }}</p>
+
+<h3>{{ _("Creating a team") }}</h3>
+
+% if user.ANON
+    <p>{{ _("You need to {0}sign into your own account{1} first.",
+            '<a href="/sign-in?back_to=%s">'|safe % urlquote(request.line.uri),
+            '</a>'|safe
+) }}</p>
+% else
+    % include "templates/create-team.html"
+% endif
+
+<h3>{{ _("Becoming a team member") }}</h3>
+
+<p>{{ _(
+    "Once you have contributed to a team's project, ask its members to invite "
+    "you. Don't forget to tell them what your username is."
+) }}</p>
+
+<h3>{{ _("Sharing the money") }}</h3>
+
+<p>{{ _(
+    "Teams don't have a hierarchy, all their members are equal and set their "
+    "own take."
+) }}</p>
+
+<p>{{ _(
+    "You can change your takes from {0}your teams dashboard{1}. It contains "
+    "tables that show the nominal takes of all members for the next and "
+    "previous payday, as well as an estimate of the actual amounts of money "
+    "they'll receive in the next payday.",
+    '<a href="/about/me/receiving/#teams">'|safe,
+    '</a>'|safe
+) }}</p>
+
+<p>{{ _(
+    "The nominal takes are the raw numbers that the members input themselves, "
+    "the actual takes are computed by the system: first it sums up the nominal "
+    "takes, then it computes the percentage that each take represents, and "
+    "finally it applies those percentages to the available income. Nominal "
+    "takes also act as maximums: the actual takes are never higher than the "
+    "nominal ones, even if additional income is available."
+) }}</p>
+
+<p>{{ _(
+    "Nominal takes are throttled, they can't be raised higher than a maximum "
+    "computed based on the nominal takes at the time of the previous payday. "
+    "The exact limit is the maximum of these three values: the number 1, two "
+    "times the member's take in the previous payday, 70% of the median take in "
+    "the previous payday, or if that number is zero, the current income "
+    "divided by the number of members."
+) }}</p>
+
+<h3>{{ _("Removing team membership") }}</h3>
+
+<p>{{ _(
+    "You can leave a team from {0}your teams dashboard{1}.",
+    '<a href="/about/me/receiving/#teams">'|safe,
+    '</a>'|safe
+) }}</p>
+
+<p>{{ _(
+    "Kicking a member out of a team is not implemented yet. Please contact "
+    "support with evidence that the member needs to be kicked out and that "
+    "there is consensus on that among the other members."
+) }}</p>
+
+</div></div>
+% endblock

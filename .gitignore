@@ -1,0 +1,11 @@
+env/
+*.egg-info/
+*~
+*.pyc
+local.env
+tests/local.env
+*.egg-info/
+.cache
+.coverage
+.deps
+node_modules/
